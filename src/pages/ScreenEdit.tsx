@@ -56,7 +56,6 @@ const ScreenEdit = () => {
 
   // Find screen from context
   const screen = screens?.find(s => s.id === id);
-  const isF2 = (screen?.flowType ?? "").toString().toLowerCase() === "f2";
 
   const [formData, setFormData] = useState({
     name: screen?.name || "",
@@ -81,6 +80,7 @@ const ScreenEdit = () => {
     whatsappLimitPerScreen: null as number | null,
     whatsappSentCount: 0,
   });
+  const isF2 = (formData.appMode ?? "").toString().toLowerCase() === "f2" || (formData.appMode ?? "").toString().toLowerCase() === "playeronly";
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -568,9 +568,19 @@ const ScreenEdit = () => {
               <h1 className="text-2xl font-bold">Edit Screen</h1>
               <p className="text-sm text-muted-foreground">Screen ID: {id}</p>
             </div>
-            {(screen?.flowType ?? "").toString().toLowerCase() === "f2" && (
+            {formData.appMode === "F2" && (
               <Badge variant="secondary" className="text-sm px-3 py-1 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
                 F2 App
+              </Badge>
+            )}
+            {formData.appMode === "PlayerOnly" && (
+              <Badge variant="secondary" className="text-sm px-3 py-1 bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30">
+                Player Only
+              </Badge>
+            )}
+            {formData.appMode === "F1" && (
+              <Badge variant="secondary" className="text-sm px-3 py-1 bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30">
+                F1 App
               </Badge>
             )}
           </div>
@@ -741,7 +751,7 @@ const ScreenEdit = () => {
                 {/* Second row: Height Calibration and Payment Amount with Logo Upload (Payment hidden for F2) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2 space-y-4">
-                    <div className={cn("grid gap-4", (screen?.flowType ?? "").toString().toLowerCase() === "f2" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2")}>
+                    <div className={cn("grid gap-4", isF2 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2")}>
                       <div className="space-y-2">
                         <Label htmlFor="heightCalibration">Height Calibration (cm)</Label>
                         <Input
@@ -778,7 +788,7 @@ const ScreenEdit = () => {
 
                       </div>
 
-                      {(screen?.flowType ?? "").toString().toLowerCase() !== "f2" && (
+                      {!isF2 && (
                         <div className="space-y-2">
                           <Label htmlFor="paymentAmount">Payment Amount (₹)</Label>
                           <Input
@@ -911,7 +921,7 @@ const ScreenEdit = () => {
                     </div>
 
                     {/* SMS after payment (for screens with payment flow) */}
-                    {(screen?.flowType ?? "").toString().toLowerCase() !== "f2" && (
+                    {!isF2 && (
                       <div className={cn("space-y-4 pt-4 border-t-2 border-border", !smsEnabledForAccount && "opacity-60 pointer-events-none")}>
                         <div className="flex items-center justify-between">
                           <div className="space-y-1 flex-1">
@@ -1016,7 +1026,7 @@ const ScreenEdit = () => {
                     )}
 
                     {/* WhatsApp after payment (for screens with payment flow) */}
-                    {(screen?.flowType ?? "").toString().toLowerCase() !== "f2" && (
+                    {!isF2 && (
                       <div className={cn("space-y-4 pt-4 border-t-2 border-border", !whatsappEnabledForAccount && "opacity-60 pointer-events-none")}>
                         <div className="flex items-center justify-between">
                           <div className="space-y-1 flex-1">
