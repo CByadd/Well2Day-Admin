@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, X, Loader2, CalendarIcon, Users, User, Music, DollarSign, Layers, Activity, Sparkles } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2, CalendarIcon, Users, User, Music, DollarSign, Layers, Activity, Sparkles, Scale, Film, Tv, Monitor, Smartphone } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
@@ -847,7 +847,7 @@ const ScreenEdit = () => {
                             value: "F1",
                             label: "F1 — Full Flow",
                             description: "BMI scale + payment + media player",
-                            icon: "⚖️",
+                            icon: Scale,
                             color: "border-blue-500 bg-blue-50 dark:bg-blue-950/40",
                             activeText: "text-blue-700 dark:text-blue-300",
                           },
@@ -855,7 +855,7 @@ const ScreenEdit = () => {
                             value: "F2",
                             label: "F2 — Player + Drawer",
                             description: "Media player with flow drawer panel",
-                            icon: "🎬",
+                            icon: Film,
                             color: "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40",
                             activeText: "text-emerald-700 dark:text-emerald-300",
                           },
@@ -863,34 +863,37 @@ const ScreenEdit = () => {
                             value: "PlayerOnly",
                             label: "Player Only",
                             description: "Media player only, no extra UI",
-                            icon: "📺",
+                            icon: Tv,
                             color: "border-purple-500 bg-purple-50 dark:bg-purple-950/40",
                             activeText: "text-purple-700 dark:text-purple-300",
                           },
-                        ].map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, appMode: opt.value })}
-                            className={cn(
-                              "relative flex flex-col items-start gap-1 rounded-xl border-2 p-4 text-left transition-all duration-150 hover:shadow-md",
-                              formData.appMode === opt.value
-                                ? `${opt.color} shadow-sm`
-                                : "border-border bg-card hover:bg-muted/50"
-                            )}
-                          >
-                            {formData.appMode === opt.value && (
-                              <span className="absolute top-2 right-2 text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-foreground/10">
-                                Active
+                        ].map((opt) => {
+                          const IconComponent = opt.icon;
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, appMode: opt.value })}
+                              className={cn(
+                                "relative flex flex-col items-start gap-1 rounded-xl border-2 p-4 text-left transition-all duration-150 hover:shadow-md",
+                                formData.appMode === opt.value
+                                  ? `${opt.color} shadow-sm`
+                                  : "border-border bg-card hover:bg-muted/50"
+                              )}
+                            >
+                              {formData.appMode === opt.value && (
+                                <span className="absolute top-2 right-2 text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-foreground/10">
+                                  Active
+                                </span>
+                              )}
+                              <IconComponent className="h-6 w-6 mb-1" />
+                              <span className={cn("text-sm font-semibold", formData.appMode === opt.value && opt.activeText)}>
+                                {opt.label}
                               </span>
-                            )}
-                            <span className="text-2xl">{opt.icon}</span>
-                            <span className={cn("text-sm font-semibold", formData.appMode === opt.value && opt.activeText)}>
-                              {opt.label}
-                            </span>
-                            <span className="text-xs text-muted-foreground leading-snug">{opt.description}</span>
-                          </button>
-                        ))}
+                              <span className="text-xs text-muted-foreground leading-snug">{opt.description}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
  
@@ -908,50 +911,57 @@ const ScreenEdit = () => {
                             value: "landscape",
                             label: "Landscape (0°)",
                             description: "Default landscape mode",
-                            icon: "🖥️",
+                            icon: Monitor,
+                            className: "",
                           },
                           {
                             value: "portrait",
                             label: "Portrait (90°)",
                             description: "90° clockwise rotation",
-                            icon: "📱",
+                            icon: Smartphone,
+                            className: "",
                           },
                           {
                             value: "reverse_landscape",
                             label: "Landscape Reversed (180°)",
                             description: "180° upside-down landscape",
-                            icon: "🔄",
+                            icon: Monitor,
+                            className: "rotate-180",
                           },
                           {
                             value: "reverse_portrait",
                             label: "Portrait Reversed (270°)",
                             description: "270° counter-clockwise",
-                            icon: "🔃",
+                            icon: Smartphone,
+                            className: "rotate-180",
                           },
-                        ].map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, rotation: opt.value })}
-                            className={cn(
-                              "relative flex flex-col items-start gap-1 rounded-xl border-2 p-4 text-left transition-all duration-150 hover:shadow-md",
-                              formData.rotation === opt.value
-                                ? "border-primary bg-primary/5 shadow-sm"
-                                : "border-border bg-card hover:bg-muted/50"
-                            )}
-                          >
-                            {formData.rotation === opt.value && (
-                              <span className="absolute top-2 right-2 text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-foreground/10">
-                                Active
+                        ].map((opt) => {
+                          const IconComponent = opt.icon;
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, rotation: opt.value })}
+                              className={cn(
+                                "relative flex flex-col items-start gap-1 rounded-xl border-2 p-4 text-left transition-all duration-150 hover:shadow-md",
+                                formData.rotation === opt.value
+                                  ? "border-primary bg-primary/5 shadow-sm"
+                                  : "border-border bg-card hover:bg-muted/50"
+                              )}
+                            >
+                              {formData.rotation === opt.value && (
+                                <span className="absolute top-2 right-2 text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-foreground/10">
+                                  Active
+                                </span>
+                              )}
+                              <IconComponent className={cn("h-6 w-6 mb-1", opt.className)} />
+                              <span className={cn("text-sm font-semibold", formData.rotation === opt.value && "text-primary")}>
+                                {opt.label}
                               </span>
-                            )}
-                            <span className="text-2xl">{opt.icon}</span>
-                            <span className={cn("text-sm font-semibold", formData.rotation === opt.value && "text-primary")}>
-                              {opt.label}
-                            </span>
-                            <span className="text-xs text-muted-foreground leading-snug">{opt.description}</span>
-                          </button>
-                        ))}
+                              <span className="text-xs text-muted-foreground leading-snug">{opt.description}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
