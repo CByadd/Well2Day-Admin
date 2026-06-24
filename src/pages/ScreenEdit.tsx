@@ -79,6 +79,7 @@ const ScreenEdit = () => {
     whatsappEnabled: false,
     whatsappLimitPerScreen: null as number | null,
     whatsappSentCount: 0,
+    rotation: "landscape" as string,
   });
   const isF2 = (formData.appMode ?? "").toString().toLowerCase() === "f2" || (formData.appMode ?? "").toString().toLowerCase() === "playeronly";
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -200,6 +201,7 @@ const ScreenEdit = () => {
           whatsappEnabled: (player as any).whatsappEnabled === true,
           whatsappLimitPerScreen: (player as any).whatsappLimitPerScreen != null ? Number((player as any).whatsappLimitPerScreen) : null,
           whatsappSentCount: (player as any).whatsappSentCount != null ? Number((player as any).whatsappSentCount) : 0,
+          rotation: (player as any).rotation || "landscape",
         });
         // Load logo URL if exists
         if (player.logoUrl) {
@@ -227,6 +229,7 @@ const ScreenEdit = () => {
           hideScreenId: false,
           hideAppMargin: false,
           appMode: "F1",
+          rotation: "landscape",
         });
         setLogoUrl(null);
         setLogoPreview(null);
@@ -256,6 +259,7 @@ const ScreenEdit = () => {
         whatsappEnabled: false,
         whatsappLimitPerScreen: null,
         whatsappSentCount: 0,
+        rotation: "landscape",
       });
       setLogoUrl(null);
       setLogoPreview(null);
@@ -468,6 +472,7 @@ const ScreenEdit = () => {
         flowDrawerSlotCount: formData.flowDrawerSlotCount || 2,
         hideScreenId: formData.hideScreenId,
         appMode: formData.appMode || "F1",
+        rotation: formData.rotation || "landscape",
         ...(isF2 ? { hideAppMargin: formData.hideAppMargin } : {}),
         smsEnabled: formData.smsEnabled,
         smsLimitPerScreen: formData.smsLimitPerScreen !== null && formData.smsLimitPerScreen !== undefined ? formData.smsLimitPerScreen : null,
@@ -881,6 +886,67 @@ const ScreenEdit = () => {
                             )}
                             <span className="text-2xl">{opt.icon}</span>
                             <span className={cn("text-sm font-semibold", formData.appMode === opt.value && opt.activeText)}>
+                              {opt.label}
+                            </span>
+                            <span className="text-xs text-muted-foreground leading-snug">{opt.description}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+ 
+                    {/* Screen Rotation Selector */}
+                    <div className="space-y-3 py-4 border-t">
+                      <div>
+                        <Label className="text-sm font-semibold">Screen Rotation</Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Configures the hardware/display orientation of the player app. Saved persistently and applies immediately.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        {[
+                          {
+                            value: "landscape",
+                            label: "Landscape (0°)",
+                            description: "Default landscape mode",
+                            icon: "🖥️",
+                          },
+                          {
+                            value: "portrait",
+                            label: "Portrait (90°)",
+                            description: "90° clockwise rotation",
+                            icon: "📱",
+                          },
+                          {
+                            value: "reverse_landscape",
+                            label: "Landscape Reversed (180°)",
+                            description: "180° upside-down landscape",
+                            icon: "🔄",
+                          },
+                          {
+                            value: "reverse_portrait",
+                            label: "Portrait Reversed (270°)",
+                            description: "270° counter-clockwise",
+                            icon: "🔃",
+                          },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, rotation: opt.value })}
+                            className={cn(
+                              "relative flex flex-col items-start gap-1 rounded-xl border-2 p-4 text-left transition-all duration-150 hover:shadow-md",
+                              formData.rotation === opt.value
+                                ? "border-primary bg-primary/5 shadow-sm"
+                                : "border-border bg-card hover:bg-muted/50"
+                            )}
+                          >
+                            {formData.rotation === opt.value && (
+                              <span className="absolute top-2 right-2 text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-foreground/10">
+                                Active
+                              </span>
+                            )}
+                            <span className="text-2xl">{opt.icon}</span>
+                            <span className={cn("text-sm font-semibold", formData.rotation === opt.value && "text-primary")}>
                               {opt.label}
                             </span>
                             <span className="text-xs text-muted-foreground leading-snug">{opt.description}</span>
