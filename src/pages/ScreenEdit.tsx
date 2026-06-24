@@ -79,7 +79,7 @@ const ScreenEdit = () => {
     whatsappEnabled: false,
     whatsappLimitPerScreen: null as number | null,
     whatsappSentCount: 0,
-    rotation: "landscape" as string,
+    rotation: "portrait" as string,
   });
   const isF2 = (formData.appMode ?? "").toString().toLowerCase() === "f2" || (formData.appMode ?? "").toString().toLowerCase() === "playeronly";
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -201,7 +201,7 @@ const ScreenEdit = () => {
           whatsappEnabled: (player as any).whatsappEnabled === true,
           whatsappLimitPerScreen: (player as any).whatsappLimitPerScreen != null ? Number((player as any).whatsappLimitPerScreen) : null,
           whatsappSentCount: (player as any).whatsappSentCount != null ? Number((player as any).whatsappSentCount) : 0,
-          rotation: (player as any).rotation || "landscape",
+          rotation: (player as any).rotation || "portrait",
         });
         // Load logo URL if exists
         if (player.logoUrl) {
@@ -229,7 +229,7 @@ const ScreenEdit = () => {
           hideScreenId: false,
           hideAppMargin: false,
           appMode: "F1",
-          rotation: "landscape",
+          rotation: "portrait",
         });
         setLogoUrl(null);
         setLogoPreview(null);
@@ -259,7 +259,7 @@ const ScreenEdit = () => {
         whatsappEnabled: false,
         whatsappLimitPerScreen: null,
         whatsappSentCount: 0,
-        rotation: "landscape",
+        rotation: "portrait",
       });
       setLogoUrl(null);
       setLogoPreview(null);
@@ -472,7 +472,7 @@ const ScreenEdit = () => {
         flowDrawerSlotCount: formData.flowDrawerSlotCount || 2,
         hideScreenId: formData.hideScreenId,
         appMode: formData.appMode || "F1",
-        rotation: formData.rotation || "landscape",
+        rotation: formData.rotation || "portrait",
         ...(isF2 ? { hideAppMargin: formData.hideAppMargin } : {}),
         smsEnabled: formData.smsEnabled,
         smsLimitPerScreen: formData.smsLimitPerScreen !== null && formData.smsLimitPerScreen !== undefined ? formData.smsLimitPerScreen : null,
