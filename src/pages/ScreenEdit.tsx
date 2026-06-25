@@ -845,17 +845,15 @@ const ScreenEdit = () => {
                         {[
                           {
                             value: "F1",
-                            label: "F1 — Full Flow",
+                            label: "F1",
                             description: "BMI scale + payment + media player",
-                            icon: Scale,
                             color: "border-blue-500 bg-blue-50 dark:bg-blue-950/40",
                             activeText: "text-blue-700 dark:text-blue-300",
                           },
                           {
                             value: "F2",
-                            label: "F2 — Player + Drawer",
-                            description: "Media player with flow drawer panel",
-                            icon: Film,
+                            label: "F2",
+                            description: "BMI scale + Media player with flow drawer panel",
                             color: "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40",
                             activeText: "text-emerald-700 dark:text-emerald-300",
                           },
@@ -863,12 +861,10 @@ const ScreenEdit = () => {
                             value: "PlayerOnly",
                             label: "Player Only",
                             description: "Media player only, no extra UI",
-                            icon: Tv,
                             color: "border-purple-500 bg-purple-50 dark:bg-purple-950/40",
                             activeText: "text-purple-700 dark:text-purple-300",
                           },
                         ].map((opt) => {
-                          const IconComponent = opt.icon;
                           return (
                             <button
                               key={opt.value}
@@ -886,8 +882,7 @@ const ScreenEdit = () => {
                                   Active
                                 </span>
                               )}
-                              <IconComponent className="h-6 w-6 mb-1" />
-                              <span className={cn("text-sm font-semibold", formData.appMode === opt.value && opt.activeText)}>
+                              <span className={cn("text-lg font-bold mb-1", formData.appMode === opt.value && opt.activeText)}>
                                 {opt.label}
                               </span>
                               <span className="text-xs text-muted-foreground leading-snug">{opt.description}</span>
