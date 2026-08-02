@@ -473,7 +473,7 @@ const ScreenEdit = () => {
         hideScreenId: formData.hideScreenId,
         appMode: formData.appMode || "F1",
         rotation: formData.rotation || "portrait",
-        ...(isF2 ? { hideAppMargin: formData.hideAppMargin } : {}),
+        hideAppMargin: formData.hideAppMargin,
         smsEnabled: formData.smsEnabled,
         smsLimitPerScreen: formData.smsLimitPerScreen !== null && formData.smsLimitPerScreen !== undefined ? formData.smsLimitPerScreen : null,
         whatsappEnabled: formData.whatsappEnabled,
@@ -960,21 +960,19 @@ const ScreenEdit = () => {
                       </div>
                     </div>
 
-                    {isF2 && (
-                      <div className="flex items-center justify-between space-x-2 py-2 border-t">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="hideAppMargin">Hide App Margin</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Remove the default outer margin around the F2 app
-                          </p>
-                        </div>
-                        <Switch
-                          id="hideAppMargin"
-                          checked={formData.hideAppMargin}
-                          onCheckedChange={(checked) => setFormData({ ...formData, hideAppMargin: checked })}
-                        />
+                    <div className="flex items-center justify-between space-x-2 py-2 border-t">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="hideAppMargin">Hide App Margin</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Remove the default outer margin around the app
+                        </p>
                       </div>
-                    )}
+                      <Switch
+                        id="hideAppMargin"
+                        checked={formData.hideAppMargin}
+                        onCheckedChange={(checked) => setFormData({ ...formData, hideAppMargin: checked })}
+                      />
+                    </div>
 
                     {/* Enable Screen Toggle */}
                     <div className="flex items-center justify-between space-x-2 py-2">
