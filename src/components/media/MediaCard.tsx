@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Trash2, FileVideo, Clock, ExternalLink } from "lucide-react";
+import { Eye, Trash2, FileVideo, Clock, ExternalLink, HardDrive, Calendar } from "lucide-react";
 import { MoveMediaModal } from "./MoveMediaModal";
 import {
   AlertDialog,
@@ -169,9 +169,15 @@ export const MediaCard = ({
               </div>
             )}
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{media.uploadDate}</span>
-              <span>{media.size}</span>
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-muted-foreground/70" />
+                {media.uploadDate}
+              </span>
+              <Badge variant="secondary" className="font-mono text-xs flex items-center gap-1 bg-primary/10 text-primary border-primary/20">
+                <HardDrive className="w-3 h-3" />
+                {media.size}
+              </Badge>
             </div>
           </div>
 
@@ -240,19 +246,19 @@ export const MediaCard = ({
           <AlertDialogHeader>
             <AlertDialogTitle className="truncate">{media.name}</AlertDialogTitle>
           </AlertDialogHeader>
-          <div className="my-4 flex-1 overflow-auto flex items-center justify-center">
+          <div className="my-4 flex-1 overflow-auto flex flex-col items-center justify-center gap-4">
             {media.type === "image" ? (
               <img
                 src={media.url}
                 alt={media.name}
-                className="max-w-full max-h-[70vh] w-auto h-auto rounded-lg object-contain"
+                className="max-w-full max-h-[60vh] w-auto h-auto rounded-lg object-contain"
               />
             ) : (
               <div className="w-full max-w-full bg-black rounded-lg overflow-hidden">
                 <video
                   src={media.url}
                   controls
-                  className="w-full h-auto max-h-[70vh]"
+                  className="w-full h-auto max-h-[60vh]"
                   preload="metadata"
                   crossOrigin="anonymous"
                   style={{ maxWidth: '100%' }}
@@ -261,6 +267,48 @@ export const MediaCard = ({
                 </video>
               </div>
             )}
+
+            {/* Comprehensive File Metadata Footer */}
+            <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-muted/60 dark:bg-muted/30 rounded-xl border text-xs">
+              <div className="space-y-1">
+                <span className="text-muted-foreground font-medium flex items-center gap-1">
+                  <HardDrive className="w-3.5 h-3.5 text-primary" />
+                  File Size
+                </span>
+                <span className="font-semibold text-foreground font-mono text-sm block">
+                  {media.size}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground font-medium flex items-center gap-1">
+                  <FileVideo className="w-3.5 h-3.5 text-primary" />
+                  Asset Type
+                </span>
+                <span className="font-semibold text-foreground capitalize block">
+                  {media.type}
+                </span>
+              </div>
+              {media.duration && (
+                <div className="space-y-1">
+                  <span className="text-muted-foreground font-medium flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    Duration
+                  </span>
+                  <span className="font-semibold text-foreground block">
+                    {media.duration}
+                  </span>
+                </div>
+              )}
+              <div className="space-y-1">
+                <span className="text-muted-foreground font-medium flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                  Uploaded Date
+                </span>
+                <span className="font-semibold text-foreground block">
+                  {media.uploadDate}
+                </span>
+              </div>
+            </div>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Close</AlertDialogCancel>

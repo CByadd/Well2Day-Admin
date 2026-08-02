@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,9 +18,11 @@ import {
   Activity, ArrowLeft, Edit, MapPin, Monitor, Clock, Calendar,
   Download, Search, Users, TrendingUp, CheckCircle, ImageIcon, List, Loader2, DollarSign
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import PeakHoursChart from "@/components/screens/PeakHoursChart";
+import * as XLSX from "xlsx";
 
 interface UserLog {
   id: string;
@@ -90,6 +92,7 @@ const ScreenDetails = () => {
   });
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFilters, setExportFilters] = useState({
+    format: "csv" as "csv" | "excel" | "json",
     registeredUsersOnly: false,
     categories: {
       Normal: true,
@@ -224,12 +227,25 @@ const ScreenDetails = () => {
     }
   };
 
-  const fetchBMIRecords = async (loadMore = false) => {
-    if (!id) return;
+  const isFetchingRef = useRef(false);
+  const observerTargetRef = useRef<HTMLDivElement | null>(null);
+  const paginationRef = useRef(pagination);
+
+  useEffect(() => {
+    paginationRef.current = pagination;
+  }, [pagination]);
+
+  const fetchBMIRecords = useCallback(async (loadMore = false) => {
+    if (!id || isFetchingRef.current) return;
+
+    const currentPagination = paginationRef.current;
+    if (loadMore && !currentPagination.hasMore) return;
+
+    isFetchingRef.current = true;
 
     try {
-      const page = loadMore ? pagination.page + 1 : 1;
-      const limit = pagination.limit;
+      const page = loadMore ? currentPagination.page + 1 : 1;
+      const limit = currentPagination.limit;
 
       setPagination(prev => ({
         ...prev,
@@ -257,7 +273,7 @@ const ScreenDetails = () => {
           hasPreviousPage: boolean;
         };
       };
-      console.log('Fetched BMI records response:', response);
+
       if (response.ok) {
         const formattedLogs = response.records.map((record) => ({
           id: record.id,
@@ -274,18 +290,18 @@ const ScreenDetails = () => {
           waterIntake: record.waterIntake,
         }));
 
-        console.log('Formatted Logs:', formattedLogs);
-
         setUserLogs(prev => loadMore ? [...prev, ...formattedLogs] : formattedLogs);
-        setStats(response.stats);
+        if (response.stats) setStats(response.stats);
 
-        setPagination(prev => ({
-          ...prev,
+        setPagination({
           page: response.pagination.page,
+          limit: response.pagination.limit,
           total: response.pagination.total,
           hasMore: response.pagination.hasNextPage,
           loadingMore: false
-        }));
+        });
+      } else {
+        setPagination(prev => ({ ...prev, loadingMore: false }));
       }
     } catch (error) {
       console.error('Error fetching BMI records:', error);
@@ -299,8 +315,10 @@ const ScreenDetails = () => {
         ...prev,
         loadingMore: false
       }));
+    } finally {
+      isFetchingRef.current = false;
     }
-  };
+  }, [id, dateFilter, toast]);
 
   // Fetch all records for peak hours analysis
   const fetchAllRecordsForPeakHours = useCallback(async (startDate?: Date, endDate?: Date) => {
@@ -311,14 +329,13 @@ const ScreenDetails = () => {
       const startDateStr = startDate ? startDate.toISOString().split('T')[0] : undefined;
       const endDateStr = endDate ? endDate.toISOString().split('T')[0] : undefined;
 
-      // Fetch with a very high limit to get all records (or we could fetch multiple pages)
       const response = await api.getScreenBMIRecords(
         id,
-        undefined, // dateFilter not used
+        undefined,
         startDateStr,
         endDateStr,
-        1, // page
-        10000 // high limit to get all records
+        1,
+        10000
       ) as {
         ok: boolean;
         records: UserLog[];
@@ -341,7 +358,6 @@ const ScreenDetails = () => {
       }
     } catch (error) {
       console.error('Error fetching peak hours data:', error);
-      // Don't show toast, just log error - peak hours is supplementary
     } finally {
       setLoadingPeakHours(false);
     }
@@ -351,23 +367,25 @@ const ScreenDetails = () => {
     fetchAllRecordsForPeakHours(startDate, endDate);
   }, [fetchAllRecordsForPeakHours]);
 
-  // Handle scroll for infinite loading
-  const handleScroll = useCallback(() => {
-    if (
-      window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight ||
-      pagination.loadingMore ||
-      !pagination.hasMore
-    ) {
-      return;
-    }
-
-    fetchBMIRecords(true);
-  }, [pagination.loadingMore, pagination.hasMore]);
-
+  // Handle intersection observer for smooth lazy loading
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+    const target = observerTargetRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isFetchingRef.current && paginationRef.current.hasMore && !paginationRef.current.loadingMore) {
+          fetchBMIRecords(true);
+        }
+      },
+      { threshold: 0.1, rootMargin: '150px' }
+    );
+
+    observer.observe(target);
+    return () => {
+      if (target) observer.unobserve(target);
+    };
+  }, [fetchBMIRecords]);
 
   const filteredLogs = userLogs.filter((log) =>
     log.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -405,21 +423,8 @@ const ScreenDetails = () => {
         return;
       }
 
-      // Prepare CSV headers
-      const headers = [
-        'Date & Time',
-        'User Name',
-        'Mobile',
-        'Weight (kg)',
-        'Height (cm)',
-        'BMI',
-        'Category',
-        'Amount Paid',
-        'Location'
-      ];
-
-      // Prepare CSV rows
-      const rows = exportData.map((log) => {
+      // Prepare formatted data objects
+      const formattedData = exportData.map((log, index) => {
         const dateTime = new Date(log.date).toLocaleString("en-IN", {
           timeZone: "Asia/Kolkata",
           year: "numeric",
@@ -431,53 +436,70 @@ const ScreenDetails = () => {
           hour12: true
         });
 
-        return [
-          dateTime,
-          log.userName,
-          log.mobile,
-          log.weight.toString(),
-          log.height.toString(),
-          log.bmi.toString(),
-          log.category,
-          log.paymentStatus && log.paymentAmount !== null && log.paymentAmount !== undefined
+        return {
+          '#': index + 1,
+          'Date & Time': dateTime,
+          'User Name': log.userName,
+          'Mobile': log.mobile,
+          'Weight (kg)': log.weight,
+          'Height (cm)': log.height,
+          'BMI': log.bmi,
+          'Category': log.category,
+          'Amount Paid': log.paymentStatus && log.paymentAmount !== null && log.paymentAmount !== undefined
             ? `₹${log.paymentAmount.toFixed(2)}`
             : '-',
-          log.location || '-'
-        ];
+          'Location': log.location || '-'
+        };
       });
 
-      // Combine headers and rows
-      const csvContent = [
-        headers.join(','),
-        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-
-      // Create blob and download
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-
-      // Generate filename with screen ID and current date
       const date = new Date().toISOString().split('T')[0];
       const screenId = id || 'screen';
       const filterSuffix = exportFilters.registeredUsersOnly ? '_registered' : '';
-      const filename = `${screenId}_export_${date}${filterSuffix}.csv`;
+      const fmt = exportFilters.format || "csv";
 
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (fmt === "excel") {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(formattedData);
+        ws['!cols'] = [
+          { wch: 5 }, { wch: 22 }, { wch: 20 }, { wch: 15 },
+          { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, 'UserActivity');
+        const filename = `${screenId}_export_${date}${filterSuffix}.xlsx`;
+        XLSX.writeFile(wb, filename);
+      } else if (fmt === "json") {
+        const jsonContent = JSON.stringify(formattedData, null, 2);
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${screenId}_export_${date}${filterSuffix}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // CSV
+        const headers = Object.keys(formattedData[0]);
+        const rows = formattedData.map(row =>
+          headers.map(h => `"${String((row as any)[h]).replace(/"/g, '""')}"`).join(',')
+        );
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${screenId}_export_${date}${filterSuffix}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
 
       toast({
         title: "Export successful",
-        description: `Exported ${exportData.length} records to ${filename}`,
+        description: `Exported ${exportData.length} records in ${fmt.toUpperCase()} format`,
       });
 
       setExportDialogOpen(false);
     } catch (error: any) {
-      console.error('Error exporting to CSV:', error);
+      console.error('Error exporting data:', error);
       toast({
         title: "Export failed",
         description: error.message || "Failed to export data",
@@ -812,6 +834,8 @@ const ScreenDetails = () => {
               </div>
             )}
 
+            <div ref={observerTargetRef} className="h-4 w-full" />
+
           </div>
         </Card>
       </main>
@@ -827,6 +851,26 @@ const ScreenDetails = () => {
           </DialogHeader>
 
           <div className="space-y-6 py-4">
+            {/* File Format Selector */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">File Format</Label>
+              <Select
+                value={exportFilters.format}
+                onValueChange={(val: "csv" | "excel" | "json") =>
+                  setExportFilters(prev => ({ ...prev, format: val }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="csv">Comma Separated (.csv)</SelectItem>
+                  <SelectItem value="excel">Excel Sheet (.xlsx)</SelectItem>
+                  <SelectItem value="json">JSON Format (.json)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Registered Users Only Filter */}
             <div className="flex items-start space-x-3">
               <Checkbox

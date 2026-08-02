@@ -3,8 +3,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Monitor, MapPin, Clock, Eye, Edit, Trash2, Settings, ListVideo, CircleDollarSign, Music, Layers } from "lucide-react";
+import { Monitor, MapPin, Clock, Eye, Edit, Trash2, Settings, ListVideo, CircleDollarSign, Music, Layers, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -233,16 +239,34 @@ const ScreenCard = ({ screen, onEdit, onDelete }: ScreenCardProps) => {
             variant="outline"
             size="icon"
             onClick={() => navigate(`/screens/${screen.id}/edit`)}
+            title="Edit Screen"
           >
             <Edit className="w-4 h-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setIsDeleteOpen(true)}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate(`/screens/${screen.id}/edit`)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Screen
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsAssignPlaylistOpen(true)}>
+                <ListVideo className="w-4 h-4 mr-2" />
+                Assign Playlist
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                onClick={() => setIsDeleteOpen(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Screen
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

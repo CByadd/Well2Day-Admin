@@ -279,7 +279,12 @@ const MAX_VIDEO_SIZE = 20 * 1024 * 1024; // 20 MB
           {/* Selected Files */}
           {files.length > 0 && (
             <div className="space-y-2">
-              <Label>Selected Files ({files.length})</Label>
+              <div className="flex items-center justify-between">
+                <Label>Selected Files ({files.length})</Label>
+                <span className="text-xs font-mono font-medium text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                  Total Size: {formatFileSize(files.reduce((acc, f) => acc + f.size, 0))}
+                </span>
+              </div>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {files.map((file, index) => (
                   <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-lg">

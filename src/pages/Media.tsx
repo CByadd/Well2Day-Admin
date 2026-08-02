@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Search, Loader2, FolderPlus, Home, ChevronRight, Trash2, Move, CheckSquare, Square, X } from "lucide-react";
+import { Upload, Search, Loader2, FolderPlus, Home, ChevronRight, Trash2, Move, CheckSquare, Square, X, HardDrive } from "lucide-react";
 import { MediaEmptyState } from "@/components/media/MediaEmptyState";
 import { UploadMediaModal } from "@/components/media/UploadMediaModal";
 import { MediaCard } from "@/components/media/MediaCard";
@@ -21,6 +21,7 @@ interface MediaItem {
   tags: string[];
   uploadDate: string;
   size: string;
+  rawSizeBytes?: number;
   publicId?: string;
   folderId?: string;
 }
@@ -83,6 +84,7 @@ const Media = () => {
           tags: item.tags || [],
           uploadDate: item.uploadDate || item.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
           size: formatFileSize(item.size || 0),
+          rawSizeBytes: Number(item.size || 0),
           publicId: item.publicId || item.id || item.public_id,
           folderId: item.folderId
         }));
@@ -231,6 +233,16 @@ const Media = () => {
     !searchQuery || f.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const totalStorageBytes = useMemo(() => {
+    return mediaItems.reduce((acc, item) => acc + (item.rawSizeBytes || 0), 0);
+  }, [mediaItems]);
+
+  const selectedStorageBytes = useMemo(() => {
+    return mediaItems
+      .filter(item => selectedMediaIds.includes(item.id))
+      .reduce((acc, item) => acc + (item.rawSizeBytes || 0), 0);
+  }, [mediaItems, selectedMediaIds]);
+
   const hasContent = mediaItems.length > 0 || folders.length > 0;
 
   if (loading && mediaItems.length === 0 && folders.length === 0) {
@@ -269,13 +281,20 @@ const Media = () => {
             ))}
           </div>
 
-          {filteredMedia.length > 0 && (
-            <div className="flex gap-2">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-primary/10 text-primary border border-primary/20 px-3 py-2 rounded-lg shadow-sm">
+              <HardDrive className="w-4 h-4 text-primary shrink-0" />
+              <span>
+                Total Storage: <strong className="font-mono text-foreground">{formatFileSize(totalStorageBytes)}</strong> ({mediaItems.length} items)
+              </span>
+            </div>
+
+            {filteredMedia.length > 0 && (
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={selectedMediaIds.length === filteredMedia.length ? handleDeselectAll : handleSelectAll}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap h-9"
               >
                 {selectedMediaIds.length === filteredMedia.length ? (
                   <><Square className="w-4 h-4 mr-2" /> Deselect All</>
@@ -283,8 +302,8 @@ const Media = () => {
                   <><CheckSquare className="w-4 h-4 mr-2" /> Select All</>
                 )}
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Controls Bar */}
@@ -397,6 +416,9 @@ const Media = () => {
             <div className="flex items-center gap-2 pr-4 border-r border-white/20">
               <span className="font-bold text-lg">{selectedMediaIds.length}</span>
               <span className="text-sm opacity-80 hidden sm:inline">selected</span>
+              <span className="text-xs font-mono bg-white/10 px-2 py-0.5 rounded-md ml-1 opacity-90">
+                {formatFileSize(selectedStorageBytes)}
+              </span>
             </div>
             
             <div className="flex items-center gap-4">

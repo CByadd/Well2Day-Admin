@@ -3,6 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -11,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Users as UsersIcon, Loader2, Activity, Download } from "lucide-react";
+import { Search, Users as UsersIcon, Loader2, Activity, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
 import * as XLSX from "xlsx";
@@ -35,6 +46,16 @@ const Users = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"excel" | "csv" | "json">("excel");
+  const [exportScope, setExportScope] = useState<"filtered" | "all">("filtered");
+  const [exportCategories, setExportCategories] = useState<Record<string, boolean>>({
+    Normal: true,
+    Overweight: true,
+    Obese: true,
+    Underweight: true,
+    None: true,
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -83,57 +104,89 @@ const Users = () => {
     }
   };
 
-  const exportToExcel = () => {
+  const handleExportData = () => {
     try {
       setExporting(true);
 
-      // Prepare data for export
-      const exportData = filteredUsers.map((user, index) => ({
+      let dataToProcess = exportScope === "filtered" ? filteredUsers : users;
+
+      // Filter by category selection
+      const activeCategories = Object.entries(exportCategories)
+        .filter(([_, active]) => active)
+        .map(([cat]) => cat);
+
+      if (activeCategories.length < 5) {
+        dataToProcess = dataToProcess.filter((user) => {
+          const userCat = user.latestBMI ? user.latestBMI.category : "None";
+          return activeCategories.includes(userCat);
+        });
+      }
+
+      if (dataToProcess.length === 0) {
+        toast({
+          title: "No users match export filters",
+          description: "Please adjust your filter options and try again.",
+          variant: "destructive",
+        });
+        setExportModalOpen(false);
+        return;
+      }
+
+      const formattedData = dataToProcess.map((user, index) => ({
         '#': index + 1,
         'Name': user.name,
         'Mobile': user.mobile,
-        'Joined Date': new Date(user.createdAt).toLocaleDateString(),
+        'Joined Date': user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-',
         'BMI Records': user.totalBMIRecords || 0,
         'Latest BMI': user.latestBMI ? user.latestBMI.bmi.toFixed(1) : '-',
-        'BMI Category': user.latestBMI ? user.latestBMI.category : '-',
+        'BMI Category': user.latestBMI ? user.latestBMI.category : 'None',
         'Screen ID': user.latestBMI ? user.latestBMI.screenId : '-',
         'Last Updated': user.latestBMI ? new Date(user.latestBMI.timestamp).toLocaleDateString() : '-',
       }));
 
-      // Create workbook and worksheet
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(exportData);
+      const dateStr = new Date().toISOString().split('T')[0];
 
-      // Set column widths
-      const colWidths = [
-        { wch: 5 },   // #
-        { wch: 20 },  // Name
-        { wch: 15 },  // Mobile
-        { wch: 15 },  // Joined Date
-        { wch: 12 },  // BMI Records
-        { wch: 12 },  // Latest BMI
-        { wch: 15 },  // BMI Category
-        { wch: 20 },  // Screen ID
-        { wch: 15 },  // Last Updated
-      ];
-      ws['!cols'] = colWidths;
-
-      // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(wb, ws, 'Users');
-
-      // Generate filename with current date
-      const date = new Date().toISOString().split('T')[0];
-      const filename = `users_export_${date}.xlsx`;
-
-      // Write file
-      XLSX.writeFile(wb, filename);
+      if (exportFormat === "excel") {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(formattedData);
+        ws['!cols'] = [
+          { wch: 5 }, { wch: 20 }, { wch: 15 }, { wch: 15 },
+          { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 20 }, { wch: 15 },
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, 'Users');
+        const filename = `users_export_${dateStr}.xlsx`;
+        XLSX.writeFile(wb, filename);
+      } else if (exportFormat === "csv") {
+        const headers = Object.keys(formattedData[0]);
+        const rows = formattedData.map(row =>
+          headers.map(h => `"${String((row as any)[h]).replace(/"/g, '""')}"`).join(',')
+        );
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `users_export_${dateStr}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } else if (exportFormat === "json") {
+        const jsonContent = JSON.stringify(formattedData, null, 2);
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `users_export_${dateStr}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
 
       toast({
         title: "Export successful",
-        description: `Exported ${exportData.length} users to ${filename}`,
+        description: `Exported ${formattedData.length} users in ${exportFormat.toUpperCase()} format`,
       });
+      setExportModalOpen(false);
     } catch (error: any) {
-      console.error('Error exporting to Excel:', error);
+      console.error("Export error:", error);
       toast({
         title: "Export failed",
         description: error.message || "Failed to export users data",
@@ -197,8 +250,8 @@ const Users = () => {
             </p>
           </div>
           <Button
-            onClick={exportToExcel}
-            disabled={exporting || filteredUsers.length === 0}
+            onClick={() => setExportModalOpen(true)}
+            disabled={exporting || users.length === 0}
             variant="outline"
             className="w-full sm:w-auto"
           >
@@ -210,7 +263,7 @@ const Users = () => {
             ) : (
               <>
                 <Download className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Export to Excel</span>
+                <span className="hidden sm:inline">Export Data</span>
                 <span className="sm:hidden">Export</span>
               </>
             )}
@@ -369,6 +422,99 @@ const Users = () => {
           )}
         </Card>
       </div>
+
+      {/* Export Options Modal */}
+      <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Export Users Data</DialogTitle>
+            <DialogDescription>
+              Select export options, file format, and category filters
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-3">
+            {/* Format Selector */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">File Format</Label>
+              <Select value={exportFormat} onValueChange={(val: any) => setExportFormat(val)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="excel">Excel Sheet (.xlsx)</SelectItem>
+                  <SelectItem value="csv">Comma Separated (.csv)</SelectItem>
+                  <SelectItem value="json">JSON Format (.json)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Scope Selector */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Data Scope</Label>
+              <Select value={exportScope} onValueChange={(val: any) => setExportScope(val)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="filtered">
+                    Matching Active Search ({filteredUsers.length} users)
+                  </SelectItem>
+                  <SelectItem value="all">
+                    All Registered Users ({users.length} users)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* BMI Category Filters */}
+            <div className="space-y-3">
+              <Label className="text-xs font-semibold">Include BMI Categories</Label>
+              <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-lg border">
+                {['Normal', 'Overweight', 'Obese', 'Underweight', 'None'].map((cat) => (
+                  <div key={cat} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`cat-${cat}`}
+                      checked={exportCategories[cat] !== false}
+                      onCheckedChange={(checked) =>
+                        setExportCategories(prev => ({
+                          ...prev,
+                          [cat]: checked === true
+                        }))
+                      }
+                    />
+                    <label
+                      htmlFor={`cat-${cat}`}
+                      className="text-xs font-medium cursor-pointer leading-none peer-disabled:cursor-not-allowed"
+                    >
+                      {cat}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportModalOpen(false)} disabled={exporting}>
+              Cancel
+            </Button>
+            <Button onClick={handleExportData} disabled={exporting}>
+              {exporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Now
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
