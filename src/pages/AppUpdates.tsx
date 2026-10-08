@@ -68,7 +68,11 @@ const AppUpdates = () => {
     form.append("apk", file);
     setUploading(true);
     try {
-      await axiosInstance.post("/api/app-releases", form, { timeout: 10 * 60 * 1000 });
+      // The instance defaults to application/json, which makes axios turn FormData into JSON and drop the file.
+      await axiosInstance.post("/api/app-releases", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 10 * 60 * 1000,
+      });
       toast({ title: "Published", description: `v${versionName || versionCode} sent to ${screenIds.trim() ? "selected screens" : "all screens"}` });
       setFile(null);
       load();
