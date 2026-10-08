@@ -21,6 +21,7 @@ import Schedules from "./pages/Schedules";
 import ScheduleEditor from "./pages/ScheduleEditor";
 import AdminManagement from "./pages/AdminManagement";
 import MessageLimits from "./pages/MessageLimits";
+import AppUpdates from "./pages/AppUpdates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -144,6 +145,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout><MessageLimits /></Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/app-updates" 
+              element={
+                <ProtectedRoute>
+                  <Layout><AppUpdates /></Layout>
                 </ProtectedRoute>
               } 
             />

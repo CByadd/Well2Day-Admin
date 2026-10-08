@@ -1,4 +1,4 @@
-import { Activity, MonitorDot, ImageIcon, List, Calendar, LogOut, Users, Shield, MessageSquare } from "lucide-react";
+import { Activity, MonitorDot, ImageIcon, List, Calendar, LogOut, Users, Shield, MessageSquare, Download } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -34,6 +34,7 @@ const navigationItems = [
 
 const adminNavigationItems = [
   { title: "Admins", url: "/admins", icon: Shield },
+  { title: "App updates", url: "/app-updates", icon: Download },
 ];
 
 const messageLimitsItem = { title: "Message limits", url: "/message-limits", icon: MessageSquare };
